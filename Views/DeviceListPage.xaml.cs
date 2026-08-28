@@ -12,6 +12,8 @@ namespace winapp
     public partial class DeviceListPage : Page
     {
         public ObservableCollection<BluetoothDeviceModel> DeviceList { get; set; } = new ObservableCollection<BluetoothDeviceModel>();
+        
+        private static bool _isPollingStarted = false;
 
         public DeviceListPage()
         {
@@ -32,6 +34,13 @@ namespace winapp
                 foreach (var device in devices)
                 {
                     DeviceList.Add(device);
+                }
+
+                // 기기 목록을 불러온 직후 백그라운드 실시간 갱신(폴링) 시작 (앱 실행 중 최초 1회만 실행)
+                if (!_isPollingStarted)
+                {
+                    _isPollingStarted = true;
+                    _ = BluetoothService.UpdateBatteryLevelsAsync(DeviceList);
                 }
             }
             catch (Exception ex)

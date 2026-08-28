@@ -11,7 +11,7 @@ namespace winapp.Services
 {
     public static class BluetoothService
     {
-        // 블루투스 기기 목록 및 배터리 검색
+        // 블루투스 기기 목록 및 초기 배터리 검색
         public static async Task<ObservableCollection<BluetoothDeviceModel>> GetDevicesAsync()
         {
             var deviceList = new ObservableCollection<BluetoothDeviceModel>();
@@ -40,7 +40,7 @@ namespace winapp.Services
                         catch
                         {
                             isConnected = device.Properties.ContainsKey("System.Devices.Aep.IsConnected") && 
-                                          Convert.ToBoolean(device.Properties["System.Devices.Aep.IsConnected"]);
+                                    Convert.ToBoolean(device.Properties["System.Devices.Aep.IsConnected"]);
                         }
 
                         if (isConnected)
@@ -53,7 +53,6 @@ namespace winapp.Services
                                     string targetName = "Galaxy Buds3 Pro";
                                     if (device.Name.Contains("Buds")) targetName = "Buds";
 
-                                    // 핵심: 'Hands-Free AG'가 포함된 PnP 장치를 직접 타겟팅하여 배터리 GUID 속성을 읽어옴
                                     string psCode = $@"
                                         $TargetName = '{targetName}'
                                         $Dev = Get-PnpDevice -PresentOnly | Where-Object {{ $_.FriendlyName -like ""*$TargetName*"" -and $_.FriendlyName -like ""*Hands-Free AG*"" }} | Select-Object -First 1
@@ -130,6 +129,85 @@ namespace winapp.Services
 
             deviceList.Add(new BluetoothDeviceModel { IsAddButton = true, BatteryPercent = -1 });
             return deviceList;
+        }
+
+        // 백그라운드 실시간 배터리 갱신 (0.5초 주기 폴링)
+        public static async Task UpdateBatteryLevelsAsync(ObservableCollection<BluetoothDeviceModel> devices)
+        {
+            while (true)
+            {
+                await Task.Delay(500); // 0.5초(500ms) 간격
+
+                foreach (var device in devices)
+                {
+                    if (device.IsConnected && !device.IsAddButton && device.Name.Contains("Buds"))
+                    {
+                        int newBattery = await Task.Run(() =>
+                        {
+                            string tempScriptPath = string.Empty;
+                            try
+                            {
+                                string targetName = "Buds";
+                                string psCode = $@"
+                                    $TargetName = '{targetName}'
+                                    $Dev = Get-PnpDevice -PresentOnly | Where-Object {{ $_.FriendlyName -like ""*$TargetName*"" -and $_.FriendlyName -like ""*Hands-Free AG*"" }} | Select-Object -First 1
+
+                                    if ($Dev) {{
+                                        try {{
+                                            $Prop = Get-PnpDeviceProperty -InstanceId $Dev.InstanceId -KeyName ""{{104EA319-6EE2-4701-BD47-8DDBF425BBE5}} 2"" -ErrorAction SilentlyContinue
+                                            if ($Prop -and $Prop.Data -ne $null) {{
+                                                $val = [int]$Prop.Data
+                                                if ($val -ge 0 -and $val -le 100) {{
+                                                    Write-Output $val
+                                                    exit
+                                                }}
+                                            }}
+                                        }} catch {{ }}
+                                    }}
+                                    Write-Output -1
+                                ";
+
+                                tempScriptPath = Path.Combine(Path.GetTempPath(), "get_bt_battery_poll.ps1");
+                                File.WriteAllText(tempScriptPath, psCode);
+
+                                var startInfo = new ProcessStartInfo
+                                {
+                                    FileName = "powershell.exe",
+                                    Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{tempScriptPath}\"",
+                                    RedirectStandardOutput = true,
+                                    UseShellExecute = false,
+                                    CreateNoWindow = true
+                                };
+
+                                using (var process = Process.Start(startInfo))
+                                {
+                                    if (process != null)
+                                    {
+                                        string output = process.StandardOutput.ReadToEnd();
+                                        process.WaitForExit();
+
+                                        if (int.TryParse(output.Trim(), out int val) && val >= 0 && val <= 100)
+                                        {
+                                            return val;
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                            finally
+                            {
+                                try { if (File.Exists(tempScriptPath)) File.Delete(tempScriptPath); } catch { }
+                            }
+                            return -1;
+                        });
+
+                        if (newBattery != -1 && device.BatteryPercent != newBattery)
+                        {
+                            device.BatteryPercent = newBattery; // 값이 바뀔 때 UI 바인딩으로 화면 깜빡임 없이 자동 갱신됨
+                        }
+                    }
+                }
+            }
         }
 
         // 블루투스 연결/해제 제어
