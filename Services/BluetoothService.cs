@@ -131,8 +131,8 @@ namespace winapp.Services
             return deviceList;
         }
 
-        // 백그라운드 실시간 배터리 갱신 (0.5초 주기 폴링)
-        public static async Task UpdateBatteryLevelsAsync(ObservableCollection<BluetoothDeviceModel> devices)
+        // 백그라운드 실시간 상태 갱신 (0.5초 주기 폴링 - 연결 상태 및 배터리 동시 체크)
+        public static async Task UpdateDeviceStatesAsync(ObservableCollection<BluetoothDeviceModel> devices)
         {
             while (true)
             {
@@ -140,7 +140,34 @@ namespace winapp.Services
 
                 foreach (var device in devices)
                 {
-                    if (device.IsConnected && !device.IsAddButton && device.Name.Contains("Buds"))
+                    if (device.IsAddButton) continue;
+
+                    bool currentConnected = false;
+                    try
+                    {
+                        // 1. 공식 API로 현재 실제 연결 상태 확인
+                        using (var btDevice = await BluetoothDevice.FromIdAsync(device.Id))
+                        {
+                            if (btDevice != null)
+                            {
+                                currentConnected = (btDevice.ConnectionStatus == BluetoothConnectionStatus.Connected);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // 예외 시 AEP 속성으로 대체 확인
+                        // (device 객체에 Properties가 없다면 최신 상태를 위해 장치 검색을 거치거나 캐시된 값 사용)
+                    }
+
+                    // 2. 연결 상태가 이전과 달라졌다면 즉시 업데이트 (INotifyPropertyChanged에 의해 UI 자동 갱신)
+                    if (device.IsConnected != currentConnected)
+                    {
+                        device.IsConnected = currentConnected;
+                    }
+
+                    // 3. 연결되어 있는 Buds 기기라면 배터리 갱신 수행
+                    if (device.IsConnected && device.Name.Contains("Buds"))
                     {
                         int newBattery = await Task.Run(() =>
                         {
@@ -203,53 +230,70 @@ namespace winapp.Services
 
                         if (newBattery != -1 && device.BatteryPercent != newBattery)
                         {
-                            device.BatteryPercent = newBattery; // 값이 바뀔 때 UI 바인딩으로 화면 깜빡임 없이 자동 갱신됨
+                            device.BatteryPercent = newBattery;
                         }
+                    }
+                    else if (!device.IsConnected && device.BatteryPercent != -1)
+                    {
+                        // 연결이 끊겼다면 배터리 표시 초기화 (-1)
+                        device.BatteryPercent = -1;
                     }
                 }
             }
         }
 
-        // 블루투스 연결/해제 제어
         public static async Task<bool> SetDeviceConnectionStateAsync(string deviceId, bool connect)
         {
-            return await Task.Run(() =>
+            try
             {
-                try
+                // 1. 전달받은 deviceId로 장치 정보 로드
+                var deviceInfo = await DeviceInformation.CreateFromIdAsync(deviceId);
+                if (deviceInfo == null)
                 {
-                    string pureSessionScript = $@"
-                        $id = '{deviceId}'
-                        $comm = Get-PnpDevice | Where-Object {{ $_.InstanceId -eq '$id' }}
-                        if ($comm) {{
-                            $state = {connect.ToString().ToLower()}
-                            if (-not $state) {{
-                                [Windows.Devices.Bluetooth.BluetoothDevice, Windows.Devices.Bluetooth, ContentType = WindowsRuntime] | Out-Null
-                                $bt = [Windows.Devices.Bluetooth.BluetoothDevice]::FromIdAsync('$id').GetAwaiter().GetResult()
-                                if ($bt) {{ $bt.Dispose() }}
-                            }}
-                        }}
-                    ";
-
-                    var startInfo = new ProcessStartInfo
-                    {
-                        FileName = "powershell.exe",
-                        Arguments = $"-NoProfile -Command \"{pureSessionScript}\"",
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-
-                    using (var process = Process.Start(startInfo))
-                    {
-                        process?.WaitForExit();
-                    }
-
-                    return true;
-                }
-                catch
-                {
+                    Debug.WriteLine("블루투스 장치를 찾을 수 없습니다.");
                     return false;
                 }
-            });
+
+                var customPairing = deviceInfo.Pairing.Custom;
+                
+                customPairing.PairingRequested += (sender, args) =>
+                {
+                    args.Accept();
+                };
+
+                if (connect)
+                {
+                    // 연결(페어링) 요청
+                    var result = await customPairing.PairAsync(DevicePairingKinds.ConfirmOnly, DevicePairingProtectionLevel.None);
+                    return result.Status == DevicePairingResultStatus.Paired || result.Status == DevicePairingResultStatus.AlreadyPaired;
+                }
+                else
+                {
+                    // 연결 해제 (언페어링) 처리
+                    try
+                    {
+                        Debug.WriteLine($"[디버그] 연결 해제(언페어링) 시도 시작 - DeviceId: {deviceId}");
+                        
+                        // UnpairAsync()는 DeviceUnpairingResult를 반환함
+                        DeviceUnpairingResult unpairResult = await deviceInfo.Pairing.UnpairAsync();
+                        
+                        Debug.WriteLine($"[디버그] 언페어링 결과 Status: {unpairResult.Status}");
+                        
+                        // 올바른 상태 값인 DeviceUnpairingResultStatus.Unpaired 사용
+                        return unpairResult.Status == DeviceUnpairingResultStatus.Unpaired;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[디버그] 연결 해제 중 예외 발생: {ex.Message}");
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"BT Connection State Error: {ex.Message}");
+                return false;
+            }
         }
     }
 }

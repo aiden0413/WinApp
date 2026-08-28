@@ -40,7 +40,7 @@ namespace winapp
                 if (!_isPollingStarted)
                 {
                     _isPollingStarted = true;
-                    _ = BluetoothService.UpdateBatteryLevelsAsync(DeviceList);
+                    _ = BluetoothService.UpdateDeviceStatesAsync(DeviceList);
                 }
             }
             catch (Exception ex)
@@ -70,19 +70,28 @@ namespace winapp
         {
             if (sender is FrameworkElement element && element.DataContext is BluetoothDeviceModel device)
             {
-                bool targetState = !device.IsConnected;
-                
-                // 서비스 호출 (device.Name 대신 고유 식별자인 device.Id 사용)
-                bool success = await BluetoothService.SetDeviceConnectionStateAsync(device.Id, targetState);
+                if (device.IsAddButton) return;
 
-                if (success)
+                bool targetState = !device.IsConnected;
+                element.IsEnabled = false;
+
+                try
                 {
-                    device.IsConnected = targetState;
-                    await LoadDevicesAsync();
+                    bool success = await BluetoothService.SetDeviceConnectionStateAsync(device.Id, targetState);
+
+                    if (!success)
+                    {
+                        MessageBox.Show($"{device.Name} 연결 상태 변경에 실패했습니다.");
+                    }
+                    // 성공한 경우: 폴링이 다음 틱에 바뀐 상태를 감지하여 알아서 UI를 갱신해 줍니다.
                 }
-                else
+                catch (Exception ex)
                 {
-                    MessageBox.Show($"{device.Name} 연결 상태 변경에 실패했습니다.");
+                    MessageBox.Show($"오류 발생: {ex.Message}");
+                }
+                finally
+                {
+                    element.IsEnabled = true;
                 }
             }
         }
