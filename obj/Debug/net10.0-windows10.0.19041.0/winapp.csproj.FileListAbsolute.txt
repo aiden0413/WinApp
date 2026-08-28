@@ -21,8 +21,9 @@ C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\winapp.
 C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\winapp.genruntimeconfig.cache
 C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\ref\winapp.dll
 C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\DeviceDetailPage.baml
-C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\DeviceListPage.baml
 C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\DeviceDetailPage.g.cs
-C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\DeviceListPage.g.cs
 C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\GeneratedInternalTypeHelper.g.cs
 C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\winapp_MarkupCompile.lref
+C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\winapp.sourcelink.json
+C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\Views\DeviceListPage.g.cs
+C:\Users\aiden04132\Desktop\winapp\obj\Debug\net10.0-windows10.0.19041.0\Views\DeviceListPage.baml

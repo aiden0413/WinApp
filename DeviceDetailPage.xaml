@@ -1,20 +1,30 @@
 <Page x:Class="winapp.DeviceDetailPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:winapp"
+      mc:Ignorable="d" 
+      d:DesignHeight="600" d:DesignWidth="800"
       Title="DeviceDetailPage" Background="#202020" Foreground="White">
 
-    <Grid Margin="20">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="20">
         <StackPanel>
-            <TextBlock Text="기기 상세 정보" FontSize="18" FontWeight="Bold" Margin="0,0,0,20"/>
+            <TextBlock Text="기기 상세 정보" FontSize="18" FontWeight="Bold" Foreground="White" Margin="0,0,0,20"/>
             
             <TextBlock Text="기기 이름:" Foreground="#888888" FontSize="12"/>
-            <TextBlock x:Name="TxtName" Text="이름" FontSize="15" Margin="0,0,0,15"/>
+            <TextBlock x:Name="TxtName" Text="이름" FontSize="15" Foreground="White" Margin="0,0,0,15"/>
 
             <TextBlock Text="기기 ID (MAC/Hardware ID):" Foreground="#888888" FontSize="12"/>
-            <TextBlock x:Name="TxtId" Text="ID" FontSize="13" Margin="0,0,0,15" TextWrapping="Wrap"/>
+            <TextBlock x:Name="TxtId" Text="ID" FontSize="13" Foreground="White" Margin="0,0,0,15" TextWrapping="Wrap"/>
 
             <TextBlock Text="현재 연결 상태:" Foreground="#888888" FontSize="12"/>
-            <TextBlock x:Name="TxtStatus" Text="상태" FontSize="15"/>
+            <TextBlock x:Name="TxtStatus" Text="상태" FontSize="15" Foreground="White" Margin="0,0,0,25"/>
+
+            <TextBlock Text="--- 전체 속성 목록 ---" Foreground="#AAAAAA" FontSize="14" FontWeight="Bold" Margin="0,0,0,15"/>
+
+            <!-- 모든 속성들이 동적으로 추가될 영역 -->
+            <StackPanel x:Name="PanelProperties"/>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </Page>
