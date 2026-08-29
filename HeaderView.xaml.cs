@@ -13,7 +13,7 @@ namespace winapp
         }
 
         // 부모 창(MainWindow)의 Frame을 제어하기 위한 참조 속성 또는 메서드 연결 필요
-        public Frame TargetFrame { get; set; }
+        public Frame? TargetFrame { get; set; }
 
         private void BtnBack_Click(object sender, RoutedEventArgs e)
         {

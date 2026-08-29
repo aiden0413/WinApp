@@ -16,7 +16,7 @@ namespace winapp
         private static bool _isPollingStarted = false;
 
         // 상세 페이지로 이동할 때 부모에게 알려주기 위한 이벤트 선언
-        public event EventHandler<BluetoothDeviceModel> DeviceSelected;
+        public event EventHandler<BluetoothDeviceModel>? DeviceSelected;
 
         public DeviceListView()
         {

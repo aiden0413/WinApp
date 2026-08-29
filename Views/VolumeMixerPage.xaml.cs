@@ -15,7 +15,7 @@ namespace winapp
 {
     public class AppVolumeModel : INotifyPropertyChanged
     {
-        private readonly AudioSessionControl _session;
+        private readonly AudioSessionControl? _session;
         private float _volume;
         
         public float PreviousVolume { get; set; } = 50f;
@@ -88,7 +88,7 @@ namespace winapp
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -97,9 +97,9 @@ namespace winapp
 
     public partial class VolumeMixerPage : Page
     {
-        private MMDeviceEnumerator _deviceEnumerator;
-        private MMDevice _defaultDevice;
-        private DispatcherTimer _refreshTimer;
+        private MMDeviceEnumerator? _deviceEnumerator;
+        private MMDevice? _defaultDevice;
+        private DispatcherTimer? _refreshTimer;
         private double _lastMasterVolume = 50;
 
         public ObservableCollection<AppVolumeModel> AppVolumes { get; set; } = new ObservableCollection<AppVolumeModel>();
@@ -246,7 +246,7 @@ namespace winapp
                         uint processId = session.GetProcessID;
                         if (processId == 0) continue;
 
-                        Process process = null;
+                        Process? process = null;
                         try
                         {
                             process = Process.GetProcessById((int)processId);
@@ -272,7 +272,7 @@ namespace winapp
                         else
                         {
                             string appName = processName;
-                            ImageSource iconSource = null;
+                            ImageSource? iconSource = null;
                             
                             try
                             {
@@ -280,7 +280,7 @@ namespace winapp
                             }
                             catch { }
 
-                            AppVolumes.Add(new AppVolumeModel(processName, appName, iconSource, session));
+                            AppVolumes.Add(new AppVolumeModel(processName, appName, iconSource!, session));
                         }
                     }
                     catch { }
@@ -307,11 +307,11 @@ namespace winapp
         private const uint PROCESS_QUERY_INFORMATION = 0x0400;
         private const uint PROCESS_VM_READ = 0x0010;
 
-        private ImageSource ExtractIcon(Process process)
+        private ImageSource? ExtractIcon(Process process)
         {
             try
             {
-                string exePath = null;
+                string? exePath = null;
 
                 // 1차 시도: 일반적인 MainModule 접근
                 try

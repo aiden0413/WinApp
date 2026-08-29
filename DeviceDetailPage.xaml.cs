@@ -83,7 +83,7 @@ if ($Dev) {
 
                         using (var reader = new StringReader(output))
                         {
-                            string line;
+                            string? line;
                             while ((line = reader.ReadLine()) != null)
                             {
                                 int eqIndex = line.IndexOf('=');
