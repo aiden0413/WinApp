@@ -1,0 +1,9 @@
+<Page x:Class="winapp.MainDashboardPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:winapp"
+      Title="MainDashboardPage" Background="#181818">
+      
+    <!-- 대시보드 조립 뷰 통째로 장착 -->
+    <local:MainDashboardView/>
+</Page>

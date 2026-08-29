@@ -1,0 +1,172 @@
+<Page x:Class="winapp.VolumeMixerPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:local="clr-namespace:winapp"
+      Title="VolumeMixerPage" Background="#181818">
+
+    <Page.Resources>
+        <!-- 슬라이더 커스텀 스타일 -->
+        <Style x:Key="CustomSliderStyle" TargetType="Slider">
+            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Foreground" Value="#00D2C4"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid VerticalAlignment="Center">
+                            <Border x:Name="TrackBackground" Height="6" CornerRadius="3" Background="{TemplateBinding Background}"/>
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Slider}}" 
+                                                        Height="6" CornerRadius="3,0,0,3"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent" Height="6"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb x:Name="Thumb" Focusable="False" Height="16" Width="16">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Ellipse x:Name="ellipse" Fill="White" Stroke="#00D2C4" StrokeThickness="3"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ellipse" Property="Fill" Value="#E0E0E0"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ellipse" Property="Fill" Value="#00D2C4"/>
+                                                        <Setter TargetName="ellipse" Property="Stroke" Value="White"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 투명한 아이콘 버튼 스타일 -->
+        <Style x:Key="IconButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="20">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                
+                <!-- 시스템 섹션 -->
+                <TextBlock Text="시스템" Foreground="#AAAAAA" FontSize="13" FontWeight="Bold" Margin="4,0,0,8"/>
+
+                <Border Background="#252525" BorderBrush="#333333" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,24">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 좌측: 마스터 아이콘 + 이름 -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="🔊" FontSize="18" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="볼륨" Foreground="White" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- 우측: 마스터 스피커 버튼, 숫자, 슬라이더 -->
+                        <Grid Grid.Column="2" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="150"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- 마스터 음소거 토글 버튼 (아이콘에 x:Name 추가) -->
+                            <Button Grid.Column="0" Style="{StaticResource IconButtonStyle}" Click="MasterMute_Click" VerticalAlignment="Center" Margin="0,0,8,0" ToolTip="음소거 / 음소거 해제">
+                                <TextBlock x:Name="TxtMasterMuteIcon" Text="🔊" FontSize="14" Foreground="#AAAAAA"/>
+                            </Button>
+                            
+                            <TextBlock Grid.Column="1" Text="{Binding ElementName=SliderMasterVolume, Path=Value, StringFormat={}{0:F0}}" 
+                                       Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right" Width="30" TextAlignment="Right" Margin="0,0,8,0"/>
+                            
+                            <Slider x:Name="SliderMasterVolume" Grid.Column="2" Minimum="0" Maximum="100" 
+                                    Style="{StaticResource CustomSliderStyle}"
+                                    ValueChanged="SliderMasterVolume_ValueChanged" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- 앱 섹션 -->
+                <TextBlock Text="앱" Foreground="#AAAAAA" FontSize="13" FontWeight="Bold" Margin="4,0,0,8"/>
+
+                <!-- 앱별 볼륨 믹서 리스트 -->
+                <ItemsControl x:Name="LstAppVolumes">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#252525" BorderBrush="#333333" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Image Source="{Binding AppIcon}" Width="20" Height="20" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding AppName}" Foreground="White" FontSize="14" FontWeight="Medium" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- 우측: 앱 음소거 토글 버튼, 숫자, 슬라이더 -->
+                                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="35"/>
+                                            <ColumnDefinition Width="150"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- 앱 음소거 토글 버튼 (데이터바인딩으로 음소거 여부에 따라 아이콘 변경) -->
+                                        <Button Grid.Column="0" Style="{StaticResource IconButtonStyle}" Click="AppMute_Click" VerticalAlignment="Center" Margin="0,0,8,0" ToolTip="음소거 / 음소거 해제">
+                                            <TextBlock Text="{Binding MuteIcon}" FontSize="14" Foreground="#AAAAAA"/>
+                                        </Button>
+                                        
+                                        <TextBlock Grid.Column="1" Text="{Binding Volume, StringFormat={}{0:F0}}" 
+                                                   Foreground="#AAAAAA" FontSize="13" VerticalAlignment="Center" HorizontalAlignment="Right" Width="30" TextAlignment="Right" Margin="0,0,8,0"/>
+                                        
+                                        <Slider Grid.Column="2" Value="{Binding Volume, Mode=TwoWay}" Minimum="0" Maximum="100" 
+                                                Style="{StaticResource CustomSliderStyle}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

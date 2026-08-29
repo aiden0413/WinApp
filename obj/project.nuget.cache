@@ -1,9 +1,18 @@
 {
   "version": 2,
-  "dgSpecHash": "P63KyIXnRJ8=",
+  "dgSpecHash": "zSXPr3dbWKg=",
   "success": true,
   "projectFilePath": "C:\\Users\\aiden04132\\Desktop\\winapp\\winapp.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio\\3.0.1\\naudio.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio.asio\\3.0.1\\naudio.asio.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio.core\\3.0.1\\naudio.core.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio.dmo\\3.0.1\\naudio.dmo.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio.midi\\3.0.1\\naudio.midi.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio.wasapi\\3.0.1\\naudio.wasapi.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio.winforms\\3.0.1\\naudio.winforms.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\naudio.winmm\\3.0.1\\naudio.winmm.3.0.1.nupkg.sha512",
+    "C:\\Users\\aiden04132\\.nuget\\packages\\system.numerics.tensors\\9.0.0\\system.numerics.tensors.9.0.0.nupkg.sha512",
     "C:\\Users\\aiden04132\\.nuget\\packages\\microsoft.windows.sdk.net.ref\\10.0.19041.57\\microsoft.windows.sdk.net.ref.10.0.19041.57.nupkg.sha512"
   ],
   "logs": []
