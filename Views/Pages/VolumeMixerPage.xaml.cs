@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -21,6 +22,9 @@ namespace winapp
         private DispatcherTimer? _refreshTimer;
         private double _lastMasterVolume = 50;
 
+        // 아이콘 중복 생성 및 메모리 폭발을 막기 위한 캐시 딕셔너리
+        private readonly Dictionary<string, ImageSource?> _iconCache = new Dictionary<string, ImageSource?>(StringComparer.OrdinalIgnoreCase);
+
         public ObservableCollection<AppVolumeModel> AppVolumes { get; set; } = new ObservableCollection<AppVolumeModel>();
 
         public VolumeMixerPage()
@@ -42,9 +46,11 @@ namespace winapp
                 if (_defaultDevice != null)
                 {
                     float currentMasterVolume = _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100;
+                    bool isMuted = _defaultDevice.AudioEndpointVolume.Mute; // 마스터 음소거 상태 가져오기
+                    
                     SliderMasterVolume.Value = currentMasterVolume;
                     if (currentMasterVolume > 0) _lastMasterVolume = currentMasterVolume;
-                    UpdateMasterIcon(currentMasterVolume);
+                    UpdateMasterIcon(isMuted, currentMasterVolume);
                 }
 
                 LoadActiveAudioSessions();
@@ -58,8 +64,8 @@ namespace winapp
         private void StartRealtimeTimer()
         {
             _refreshTimer = new DispatcherTimer();
-            // 문제 2번 해결: 반응 속도를 높이기 위해 주기 단축 (1초 -> 0.5초)
-            _refreshTimer.Interval = TimeSpan.FromMilliseconds(500);
+            // CPU 갈굼과 메모리 누수를 막기 위해 주기를 1초로 완화
+            _refreshTimer.Interval = TimeSpan.FromSeconds(1);
             _refreshTimer.Tick += (s, e) => 
             {
                 try
@@ -67,12 +73,14 @@ namespace winapp
                     if (_defaultDevice != null && SliderMasterVolume != null)
                     {
                         float currentMaster = _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100;
+                        bool currentMute = _defaultDevice.AudioEndpointVolume.Mute;
+
                         if (Math.Abs(SliderMasterVolume.Value - currentMaster) > 0.5f)
                         {
-                            if (SliderMasterVolume.Value > 0) _lastMasterVolume = SliderMasterVolume.Value;
+                            if (currentMaster > 0) _lastMasterVolume = currentMaster;
                             SliderMasterVolume.Value = currentMaster;
-                            UpdateMasterIcon(currentMaster);
                         }
+                        UpdateMasterIcon(currentMute, currentMaster);
                     }
 
                     LoadActiveAudioSessions();
@@ -87,15 +95,16 @@ namespace winapp
             try
             {
                 _refreshTimer?.Stop();
+                _refreshTimer = null;
             }
             catch { }
         }
 
-        private void UpdateMasterIcon(double volume)
+        private void UpdateMasterIcon(bool isMuted, double volume)
         {
             if (TxtMasterMuteIcon != null)
             {
-                TxtMasterMuteIcon.Text = volume <= 0 ? "🔇" : "🔊";
+                TxtMasterMuteIcon.Text = (isMuted || volume <= 0) ? "🔇" : "🔊";
             }
         }
 
@@ -103,18 +112,13 @@ namespace winapp
         {
             try
             {
-                if (_defaultDevice != null && SliderMasterVolume != null)
+                if (_defaultDevice != null)
                 {
-                    if (SliderMasterVolume.Value > 0)
-                    {
-                        _lastMasterVolume = SliderMasterVolume.Value;
-                        SliderMasterVolume.Value = 0;
-                    }
-                    else
-                    {
-                        SliderMasterVolume.Value = _lastMasterVolume > 0 ? _lastMasterVolume : 50;
-                    }
-                    UpdateMasterIcon(SliderMasterVolume.Value);
+                    bool currentMute = _defaultDevice.AudioEndpointVolume.Mute;
+                    _defaultDevice.AudioEndpointVolume.Mute = !currentMute; // 윈도우 마스터 음소거 토글
+                    
+                    float currentVolume = _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100;
+                    UpdateMasterIcon(!currentMute, currentVolume);
                 }
             }
             catch { }
@@ -128,7 +132,6 @@ namespace winapp
                 var appModel = button?.DataContext as AppVolumeModel;
                 if (appModel != null)
                 {
-                    // 음소거 상태를 반전시킴 (슬라이더 바 위치는 그대로 유지됨)
                     appModel.IsMuted = !appModel.IsMuted;
                 }
             }
@@ -183,7 +186,6 @@ namespace winapp
 
                         currentProcessNames.Add(processName);
 
-                        // 이미 리스트에 존재하는 앱인지 확인
                         var existingItem = AppVolumes.FirstOrDefault(x => x.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase));
                         if (existingItem != null)
                         {
@@ -191,24 +193,30 @@ namespace winapp
                         }
                         else
                         {
-                            // 새로 켜진 앱 발견 즉시 추가
                             string appName = process.MainWindowTitle;
                             if (string.IsNullOrEmpty(appName))
                             {
-                                appName = processName; // 창 제목이 없으면 프로세스 이름 사용
+                                appName = processName;
                             }
 
+                            // 아이콘 캐싱 적용: 이미 추출한 적이 있다면 캐시된 아이콘 재사용
                             ImageSource? iconSource = null;
-                            try
+                            if (_iconCache.ContainsKey(processName))
                             {
-                                iconSource = ExtractIcon(process);
+                                iconSource = _iconCache[processName];
                             }
-                            catch { }
+                            else
+                            {
+                                try
+                                {
+                                    iconSource = ExtractIcon(process);
+                                }
+                                catch { }
+                                _iconCache[processName] = iconSource;
+                            }
 
-                            // UI 스레드에서 즉시 바인딩 컬렉션에 추가
                             Dispatcher.Invoke(() =>
                             {
-                                // 한 번 더블 체크해서 중복 추가 원천 차단
                                 if (!AppVolumes.Any(x => x.ProcessName.Equals(processName, StringComparison.OrdinalIgnoreCase)))
                                 {
                                     AppVolumes.Add(new Models.AppVolumeModel(processName, appName, iconSource, session));
@@ -219,7 +227,6 @@ namespace winapp
                     catch { }
                 }
 
-                // 종료된 앱은 목록에서 칼같이 제거
                 var closedItems = AppVolumes.Where(x => !currentProcessNames.Contains(x.ProcessName)).ToList();
                 if (closedItems.Count > 0)
                 {
@@ -233,12 +240,6 @@ namespace winapp
                 }
             }
             catch { }
-        }
-
-        // 아이콘을 못 가져왔을 때 null 반환
-        private ImageSource? CreateDefaultIcon()
-        {
-            return null; 
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
@@ -298,10 +299,12 @@ namespace winapp
                         {
                             if (sysIcon != null)
                             {
-                                return System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
+                                var bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(
                                     sysIcon.Handle,
                                     Int32Rect.Empty,
                                     BitmapSizeOptions.FromEmptyOptions());
+                                bitmapSource.Freeze(); // 메모리 최적화 및 크로스 스레드 안전성 확보
+                                return bitmapSource;
                             }
                         }
                         return null;
@@ -322,8 +325,13 @@ namespace winapp
                     if (Math.Abs(_defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar - newVolume) > 0.005f)
                     {
                         _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = newVolume;
+                        // 볼륨을 올리면 자동으로 음소거 해제되도록 처리할 수도 있음
+                        if (newVolume > 0 && _defaultDevice.AudioEndpointVolume.Mute)
+                        {
+                            _defaultDevice.AudioEndpointVolume.Mute = false;
+                        }
                     }
-                    UpdateMasterIcon(SliderMasterVolume.Value);
+                    UpdateMasterIcon(_defaultDevice.AudioEndpointVolume.Mute, SliderMasterVolume.Value);
                 }
             }
             catch { }
