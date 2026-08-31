@@ -1,0 +1,35 @@
+﻿<Window x:Class="winapp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:winapp"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
+        Title="바로가기 모음" Height="960" Width="768" Background="#181818"
+        WindowStartupLocation="Manual"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing">
+    <Grid>
+        <!-- 1. Grid 구조 정의 속성 요소를 가장 먼저 배치 -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 2. 실제 화면에 그려질 UI 요소들 -->
+        <local:HeaderView x:Name="MyHeader" Grid.Row="0"/>
+        <Frame x:Name="MainFrame" Grid.Row="1" NavigationUIVisibility="Hidden"/>
+
+        <!-- 3. 비주얼 컴포넌트가 아닌 트레이 아이콘은 그리드 내부 하단이나 어디든 배치 가능 -->
+        <tb:TaskbarIcon x:Name="MyNotifyIcon"
+                        ToolTipText="바로가기 모음"
+                        IconSource="pack://application:,,,/Assets/app.ico"
+                        TrayMouseDoubleClick="MyNotifyIcon_TrayMouseDoubleClick">
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="열기" Click="TrayOpen_Click"/>
+                    <Separator/>
+                    <MenuItem Header="종료" Click="TrayExit_Click"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+    </Grid>
+</Window>

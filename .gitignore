@@ -1,0 +1,6 @@
+# Visual Studio / .NET Core 빌드 파일
+bin/
+obj/
+[Oo][Bb][Jj]/
+[Bb][Ii][Nn]/
+.vs/
